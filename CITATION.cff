@@ -1,0 +1,29 @@
+cff-version: 1.2.0
+message: "If you use KnightBase in your research or project, please cite it as below."
+title: "KnightBase: A Consolidated Financial Asset Database for the Dhaka Stock Exchange (1999-2026)"
+type: dataset
+authors:
+  - family-names: "Ornob"
+    given-names: "K. M. Miad Hassan"
+    alias: "Ow1nomics"
+    email: kmmiadhassanornob@gmail.com
+    orcid: ""
+repository-code: "https://github.com/o-rnob/knightbase"
+url: "https://github.com/o-rnob/knightbase"
+abstract: >
+  KnightBase consolidates multiple public sources of Dhaka Stock Exchange (DSE)
+  historical price data (1999-2026), Bangladesh macroeconomic indicators
+  (Bangladesh Bank, World Bank), and DSE corporate-action snapshots into a
+  single SQLite database with full data-quality logging. Every skip, conflict,
+  rename, and known gap is queryable in the data_quality_log and
+  price_conflicts tables rather than silently resolved.
+keywords:
+  - dhaka-stock-exchange
+  - bangladesh
+  - finance
+  - quantitative-finance
+  - open-data
+  - sqlite
+license: MIT
+version: "1.0.0"
+date-released: "2026-08-09"
