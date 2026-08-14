@@ -1,6 +1,6 @@
 ![KnightBase logo — moonlit owl artwork](https://github.com/o-rnob/Knightbase-DB/raw/main/logo.png)
 
-# KnightBase — Bangladesh's Biggest Open-Source Financial Asset Records and Database
+# KnightBase DB — Bangladesh's Biggest Open-Source Financial Asset Records and Database
 
 [#knightbase](#knightbase)
 
