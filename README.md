@@ -58,7 +58,7 @@ If a number looks wrong, you can query `data_quality_log` and find out exactly w
 | Price rows                             | 2,566,157                                                                                                                      |
 | Unique tickers (all sources combined)  | ~870 (raw identifiers; not deduplicated across ID systems — see Known Gaps)                                                    |
 | Price coverage                         | 1999-01-10 → 2026-08-06 (with a documented gap; see below)                                                                     |
-| DSEX / DS30 index coverage             | 2013-01-30 → 2026-08-06, no gaps                                                                                               |
+| DSEX / DS30 index coverage             | 2013-01-30 → 2026-08-06 (`close` column is empty — use the `*_index_close` views; ~19 missing trading days, see below) |
 | Corporate action snapshots             | 2 dated snapshots: 2020-12-06 and 2026-08-02                                                                                   |
 | Macro coverage                         | Bangladesh CPI 1987–2025 (World Bank); Bangladesh Bank CPI/FX/exchange-rate/remittances 1973–2021 + live FX reserves 2024–2026 |
 | Data quality log entries               | 463                                                                                                                            |
@@ -126,7 +126,8 @@ macOS includes SQLite3 by default. Open a terminal and run:
 
 ```bash
 sqlite3 knightbase.db
-sqlite> SELECT * FROM dsex_index ORDER BY date DESC LIMIT 5;
+sqlite> .read sql/index_close_fix.sql
+sqlite> SELECT * FROM dsex_index_close ORDER BY date DESC LIMIT 5;
 sqlite> .quit
 ```
 
@@ -197,7 +198,7 @@ import pandas as pd
 conn = sqlite3.connect("knightbase.db")
 
 df = pd.read_sql_query(
-    "SELECT date, close FROM dsex_index ORDER BY date",
+    "SELECT date, close_derived AS close FROM dsex_index_close ORDER BY date",
     conn
 )
 
@@ -273,7 +274,23 @@ Schema ready for use: `(ticker, date, source_a, value_a, source_b, value_b, pct_
 
 [#dsex_index-ds30_index](#dsex_index-ds30_index)
 
-Clean daily OHLCV for the two DSE benchmark indices, 2013-01-30 → 2026-08-06. No gaps, no dupes.
+Daily index values for the two DSE benchmark indices, 2013-01-30 → 2026-08-06. No duplicate dates.
+
+> **⚠️ Read before using these tables.** The raw columns need a fix-up before they give correct closing values:
+>
+> 1. **`close` and `volume` are NULL in every row.**
+> 2. **Values are TEXT with thousands separators** (e.g. `'5,247.30'`). `CAST(open AS REAL)` silently returns `5.0` — strip the commas first.
+> 3. **The table mixes two row formats:**
+>    - *Single-value rows* (`open = high = low`, ~2,166 rows; mostly 2013–2019 and 2022–Jan 2025): the value is **that day's close**.
+>    - *True OHLC rows* (~920 rows; mostly 2020–2021 and 2025–2026): `open` is the **previous trading day's close**, so the day's close is the **next row's `open`**. (Example: DSEX's record close of 7,367.99 on 2021-10-10 is stored as `open` on 2021-10-11.)
+> 4. **Some trading days are missing**: 16 Sundays between 2024-10-06 and 2025-01-26, plus 2025-05-24, 2025-08-27 and 2026-04-08 (DSEX) — checked against DSE's official market-summary archive.
+>
+> Run [`sql/index_close_fix.sql`](sql/index_close_fix.sql) to create `dsex_index_close` and `ds30_index_close` views with a numeric `close_derived` column and a `close_method` column showing which rule was used. Where a close can't be derived, it is left NULL rather than guessed. Checked against the official DSE archive (`https://www.dse.com.bd/api/live/data-archive/market-summary`) over the 2024-09-30 → 2026-08-06 overlap: **DSEX 417/422 and DS30 419/423 days match within 0.5 points.** The few mismatches are the days just before a missing trading day, where the "next row" isn't really the next session.
+>
+> ```bash
+> sqlite3 knightbase.db < sql/index_close_fix.sql
+> sqlite3 knightbase.db "SELECT * FROM dsex_index_close ORDER BY date DESC LIMIT 5;"
+> ```
 
 ### `cpi_bangladesh_annual`
 
